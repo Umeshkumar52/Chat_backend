@@ -1,11 +1,17 @@
-import mongoose, { mongo, Schema } from "mongoose";
+import mongoose, { mongo, Mongoose, Schema } from "mongoose";
+import user from './user.js'
 const conversation=new mongoose.Schema({
-    sender_id:{
+    user:{
         type:mongoose.Schema.Types.ObjectId,
+        user:"user",
+        require:true
+    },
+    sender_id:{
+        type:String,
         require:true
     },
     reciever_id:{
-        type:mongoose.Schema.Types.ObjectId,
+        type:String,
         require:true
     },
     chats:{
@@ -16,7 +22,7 @@ const conversation=new mongoose.Schema({
         type:String,
         require:true
     }
-
-
-})
+},
+{timestamps:true}
+)
 export default mongoose.model("conversation",conversation)

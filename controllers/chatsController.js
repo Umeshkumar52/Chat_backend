@@ -2,76 +2,114 @@ import Conversation from "../models/Conversation.js";
 import user from "../models/user.js";
 import path from "path";
 import cloudinary from 'cloudinary'
-const SaveMessage=async(req,res)=>{
-    try {      
-        const{sender_id,msg}=req.body
-        const _id=req.params._id  
+const SaveTextCom=async(req,res)=>{
+    try {            
+        const{sender_id,message,time,type,msg_type}=req.body
+        const {_id}=req.params        
         const existChat=await Conversation.findOne({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]})       
         if(existChat){         
-         if(req.file){
-           const extension=path.extname(req.file.path)
-            const options={
-              overwrite:true
-            }
-            const result=await cloudinary.v2.uploader.upload(req.file.path)           
             const response=await Conversation.updateOne({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]},{$push:{chats:{
-               _id,
-               url_type:extension,
-               secure_url:result.secure_url,
-            }}})       
-            res.status(200).json({
-               success:true,
-               message:response
-              })
-            }else{
-            const response=await Conversation.updateOne({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]},{$push:{chats:{
-               _id:_id,
-               url_type:"msg",
-               msg
+               reciever_id:_id,
+               sender_id:sender_id,
+               msg_type,
+               time,
+               message
               }}}) 
              return res.status(200).json({
                success:true,
                message:response
              })
-         }
       }
-          else{
-            if(req.file){
-               const extension=path.extname(req.file.path)
-                const options={
-                  overwrite:true
-                }
-                const result=await cloudinary.v2.uploader.upload(req.file.path)           
-                const response=await Conversation.updateOne({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]},{$push:{chats:{
-                   _id,
-                   url_type:extension,
-                   secure_url:result.secure_url,
-                }}})       
-                res.status(200).json({
-                   success:true,
-                   message:response
-                  })
-                }else{
+          else{   
        const response=await Conversation.create({
-        sender_id:sender_id,
-        reciever_id:_id,
-        chats:{
-         _id:_id,
-         url_type:"msg",
-         msg
-        }
+         sender_id:sender_id,
+         reciever_id:_id,
+              chats:{ 
+               reciever_id:_id,
+               sender_id:sender_id,
+               msg_type,
+               time,
+               message
+            }
        })
       return res.status(200).json({
         success:true,
         message:response
        })
-      }
+    
       }
       }catch (error) {
        return res.status(512).json({
         success:false,
-        message:error
+        message:"Fail send message to user",error
        }) 
+   }
+}
+const SaveSocialCom=async(req,res)=>{
+   try {
+      const{_id,sender_id}=req.params     
+      const {time}=req.body
+      if(req.file){
+         const existChat=await Conversation.findOne({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]})   
+         let imgResult;       
+         if(req.file.mimetype=='video/mp4'){
+         imgResult=await cloudinary.v2.uploader.upload(req.file.path, 
+            { resource_type: "video", 
+              public_id: "dog_closeup",
+              quality:low,
+              transformation:[
+                { width:200, height:240, quality:low,crop: "fill",audio_codec: "none" }, 
+               ],                                   
+              eager_async: true,
+              eager_notification_url: "http://localhost:3000/chats"
+              })                 
+        }else{
+          imgResult=await cloudinary.v2.uploader.upload(req.file.path,{
+            transformation:{
+               width:200,height:240, crop:"scale",
+            }
+          }) 
+        }
+         if(existChat){                 
+             const response=await Conversation.updateOne({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]},{$push:{chats:{
+               reciever_id:_id,
+               sender_id:sender_id,
+               msg_type:"file",
+               url_type:imgResult.format,
+               time,
+               secure_url:imgResult.secure_url,
+             }}})       
+             res.status(200).json({
+                success:true,
+                message:imgResult,response
+               })
+      }
+          else{   
+       const response=await Conversation.create({
+        sender_id:sender_id,
+        reciever_id:_id,
+        chats:{
+               reciever_id:_id,
+               sender_id:sender_id,
+               msg_type:"file",
+               url_type:imgResult.format,
+               time,
+               secure_url:imgResult.secure_url,
+        }
+       })
+      res.status(200).json({
+        success:true,
+        message:response
+       })
+      }
+    console.log(imgResult);
+      
+   }
+   } catch (error) {
+      res.status(512).json({
+         success:false,
+         message:error
+      })
    }
 }
 const GetAllMessages=async(req,res)=>{
@@ -90,4 +128,4 @@ const GetAllMessages=async(req,res)=>{
       })
    }
 }
-export {SaveMessage,GetAllMessages}
+export {SaveTextCom,SaveSocialCom,GetAllMessages}

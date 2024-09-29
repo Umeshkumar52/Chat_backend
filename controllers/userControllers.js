@@ -1,16 +1,219 @@
+import path from "path";
 import user from "../models/user.js";
+import cloudinary from 'cloudinary'
+import {getIo} from '../midilwares/IoInstance.js'
+const cookieOptions={
+    maxAge:new Date(Date.now()+24*60*60*1000),
+    httpOnly:true,
+    secure:false
+}
 const createUser=async(req,res)=>{
-    try {
-        const response=await user.create(req.body)
-        res.status(200).json({
+    try {       
+        const {Email}=req.body
+        const exist=await user.findOne({Email:Email})
+        if(exist){
+        return res.status(511).json({
+            success:false,
+            message:"Account allready exist"
+        })}
+        const userSave=await user.create(req.body) 
+        userSave.save() 
+        if(req.file){
+            avatar= await cloudinary.v2.uploader.upload(req.file.path,{
+                transformation:{
+                    width:200,height:240, crop:"scale"
+                 }
+            }
+            )
+            userSave.avatar=avatar.secure_url  
+        } 
+        const token = await userSave.genJwtToken() 
+       userSave.token=token
+        user.Password=undefined
+       res.cookie("token",token,cookieOptions)         
+       return res.status(200).json({
             success:true,
-            message:response
+            message:userSave
         })
     } catch (error) {
       return res.status(512).json({
             success:false,
             message:"User Not Save, Try again"
         }) 
+    }
+ }
+ const updateUser=async(req,res)=>{
+    try { 
+        const {_id,type}=req.body
+        const cloudinary_res=await cloudinary.v2.uploader.upload(req.file.path)
+        console.log(cloudinary_res);
+        let response;
+        if(type=="profile"){  
+         response=await user.findByIdAndUpdate(_id,{avatar:cloudinary_res.secure_url})
+        }else{
+            response=await user.findByIdAndUpdate(_id,{profileBanner:cloudinary_res.secure_url})
+        }
+        return res.status(200).json({
+            success:true,
+            message:response
+        })
+    } catch (error) {
+        return res.status(500).json({
+            success:true,
+            message:error
+        })
+    }
+ }
+ const following=async(req,res)=>{
+    try {
+        let io=getIo()
+        const{requester,reciever}=req.params          
+         await user.findByIdAndUpdate(requester,{$push:{Following:reciever}})
+         await user.findByIdAndUpdate(reciever,{$push:{Followers:requester}})
+            io.emit("following",{reciever:reciever,requester:requester})
+            return res.status(200).json({
+                success:true,
+                message:"Successfull"
+            })
+    } catch (error) {
+       return res.status(500).json({
+            success:false,
+            message:error
+        })
+    }
+ }
+ const unfollowing=async(req,res)=>{
+    try {
+        let io=getIo()
+        const{requester,reciever}=req.params          
+         await user.updateOne({_id:requester},{$pull:{Following:reciever}})
+         await user.updateOne({_id:reciever},{$pull:{Followers:requester}})
+            io.emit("unfollowing",{reciever:reciever,requester:requester})
+            return res.status(200).json({
+                success:true,
+                message:"Successfull"
+            })
+    } catch (error) {
+       return res.status(500).json({
+            success:false,
+            message:error
+        })
+    }
+ }
+ const userFollowing=async(req,res)=>{
+    try {
+        const {user_id}=req.params;
+        const response=await user.findById(user_id).select("Following")
+        .populate({
+            path:'Following',
+            select:['UserName','avatar','Followers','Name']
+        })
+       return res.status(200).json({
+            success:true,
+            message:response
+        })
+    } catch (error) {
+        return  res.status(500).json({
+            success:false,
+            message:error
+        })
+    }
+ }
+ const userFollower=async(req,res)=>{
+    try {
+        const {user_id}=req.params;
+        const response=await user.findById(user_id).select("Followers")
+        .populate({
+            path:'Followers',
+            model:"user",
+            select:['UserName','avatar','Followers','Name']
+        })
+       return res.status(200).json({
+            success:true,
+            message:response
+        })
+    } catch (error) {
+        return  res.status(500).json({
+            success:false,
+            message:error
+        })
+    }
+ }
+ const login=async(req,res)=>{
+    try {
+        const{UserName,Email,Phone,Password}=req.body
+        const existUser=await user
+        .findOne({Email:Email})
+        .select("+Password")
+        if(existUser==null || await existUser.validator(Password,existUser.Password)==false){
+            return res.status(512).json({
+                success:false,
+                message:"Invalid Password"
+            })}
+            const token = await existUser.genJwtToken()        
+            existUser.token=token
+            user.password=undefined
+           res.cookie("token",token,cookieOptions) 
+          res.status(200).json({
+                success:true,
+                message:existUser
+            })
+    } catch (error) {
+        return res.status(512).json({
+            success:false,
+            message:"Account not exist"
+        })
+    }
+ }
+ const logout=async(req,res)=>{
+    try {
+         res.cookie("token",null,{
+            maxAge:null,
+            httpOnly:true
+         })
+        return res.status(200).json({
+            success:true,
+            message:"Logout Successfully"
+        })
+    } catch (error) {
+       return res.status(500).json({
+        success:false,
+        message:error
+       }) 
+    }
+ }
+ const userWithAllPost=async(req,res)=>{
+    try {
+        const{user_id}=req.params
+        console.log(user_id);
+        
+        const response=await user.findById(user_id)
+        .populate({
+            path:"myPosts",
+            populate:{
+                path:"author",
+                model:"user",
+                select:["_id","Name","UserName"]
+            }
+        })
+        .populate({
+            path:"myReels",
+            populate:{
+                path:"author",
+                model:"user",
+                select:["_id","Name","UserName"]
+            }
+        })
+
+        res.status(200).json({
+            success:true,
+            message:response
+        })
+    } catch (error) {
+        res.status(512).json({
+            success:false,
+            message:"User does not exist"
+        })
     }
  }
  const userInf=async(req,res)=>{
@@ -28,4 +231,22 @@ const createUser=async(req,res)=>{
         })
     }
  }
-export {createUser,userInf}
+ const getUser=async(req,res)=>{
+    try {
+        console.log(req.params);
+        const{UserName}=req.params
+        const response=await user.find({UserName:UserName})
+        console.log(response);
+        
+        res.status(200).json({
+            success:true,
+            message:response
+        })
+    } catch (error) {
+        return res.status(512).json({
+            success:false,
+            message:"User Not Found"
+        })
+    }
+ }
+export {createUser,userWithAllPost,userInf,unfollowing,getUser,userFollower,userFollowing,following,logout,login,updateUser}

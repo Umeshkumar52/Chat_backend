@@ -1,28 +1,35 @@
 import express from "express";
 import bodyParser from "body-parser";
-import cookieparser from "cookie-parser";
+import cookieParser from "cookie-parser";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import cors from "cors";
-import { log } from "node:console";
+import dotenv from 'dotenv'
 import dbConnect from "./mongoose.js";
 import userRoutes from './routers/userRoutes.js'
 import chatsRoutes from './routers/chatsRoutes.js'
 import cloudinary from 'cloudinary'
-import { type } from "node:os";
-import { env } from "node:process";
-import axios from 'axios'
+import postsRoutes from './routers/postsRoutes.js'
+import reelsRoutes from './routers/reelsRoutes.js'
+import friendReqRoutes from './routers/friendReqRoutes.js'
+import { setIo } from "./midilwares/IoInstance.js";
+// import io from "./midilwares/IoInstance.js";
 const app = express();
+app.use(cookieParser());
+dotenv.config()
 const server = createServer(app);
 const PORT = process.env.PORT || 5002;
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieparser());
 app.use(express.json());
+app.use(cors({
+  origin:"http://localhost:3000",
+  credentials:true,
+   }))
 cloudinary.config({ 
-  cloud_name:"dupnunjun", 
-  api_key:"815871334447987", 
-  api_secret:"krmLIR1bD3FdGmkM4Oz0o1kTps8",
+  cloud_name:process.env.CLOUD_NAME, 
+  api_key:process.env.API_KEY, 
+  api_secret:process.env.API_SECRET,
 });
 const io = new Server(server, {
   cors: {
@@ -30,6 +37,7 @@ const io = new Server(server, {
     credentials: false,
   },
 });
+setIo(io)
 dbConnect()
 io.use((socket, next) => {
   const userName = socket.handshake.auth.userName;
@@ -39,46 +47,43 @@ io.use((socket, next) => {
   socket.userName = userName;
   next();
 });
-
 io.on("connection", (socket) => {
   socket.on("rooms", (data) => {
-    socket.join(data ? data : socket.id);
+    socket.join(data?data :socket.id); 
+    console.log(data,"room join");
+       
   });
-  socket.on("disconnect",(data)=>{
-    socket.leave(data?data:socket.id)
-  })
   socket.on("private_msg", (data) => {
     data.type="incoming"
-    socket.to(data.to ? data.to : socket.id).emit("private_msg", {
+    socket.to(data.reciever_id ? data.reciever_id : socket.id).emit("private_msg", {
       data,
-      to: data.from? data.from : socket.id,
-      from:data.to,
+      reciever_id: data.sender_id? data.sender_id : socket.id,
+      sender_id:data.reciever_id,
     });
     
   });
-  socket.on("uploadFile",(data)=>{
-    socket.emit("uploadFileResponse",data)
-  })
   socket.on("typingStatus", (data) => {
-    socket.to(data.to).emit("typingStatus", data.status);
+    setTimeout(()=>{
+      socket.to(data.to).emit("typingStatus", data.status);
+    },1000)
   });
-  const users = [];
+  let users = [];
   for (let [id, socket] of io.of("/").sockets) {
     users.push({
       userId: id,
       userName: socket.userName,
+      online:true
     });
   }
-  socket.broadcast.emit("users", users);
-  socket.on("join_room", (data) => {
-    socket.join(data);
-  });
-  socket.on("group_chat_uotgoing", (data) => {
-    socket.to("meeting").emit("group_chat_incoming", { data: data });
-  });
-  socket.on("send_message", ({ message, time }) => {
-    socket.broadcast.emit("recieve_message", { message, time });
-  });
+  socket.emit("users", users);
+  socket.on("offline",()=>{
+   users.push(users.filter((user)=>{
+    if( user.userId==socket.id){
+        users.online=false
+    }
+    socket.emit("users",users)
+   }))
+  })
 });
 app.use(
   cors({
@@ -86,8 +91,12 @@ app.use(
     credentials: true,
   })
 );
-app.use('/api',userRoutes)
+process.on('warning', e => console.warn(e.stack));
+app.use('/api/auth',userRoutes)
+app.use('/api/auth/post',postsRoutes)
 app.use('/api/conversation',chatsRoutes)
+app.use('/api/auth/reels',reelsRoutes)
+app.use('/api/auth/follow',friendReqRoutes)
 app.listen(PORT, () => {
   console.log(`App Server is running on port ${PORT}`);
 });
