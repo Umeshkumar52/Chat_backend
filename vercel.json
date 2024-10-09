@@ -3,11 +3,24 @@
 {
     "src":"index.js",
     "use":"@vercel/node"
+    },{
+        "src":"public/*",
+        "use":"@vercel/static"
+    },{
+        "src":"controllers/*.js",
+        "use":"@vercel/node"
+    },{
+        "src":"models/*.js",
+        "use":"@vercel/node"
     }
+
 ],
 "routes":[
     {
-        "src":"/Chat_backend",
-        "dest":"/index.js"
+        "src":"/routers/(.*)",
+        "dest":"/routers/$1"
+    }, {
+        "src":"/(.*)",
+        "dest":"/public/$1"
     }
 ]}
