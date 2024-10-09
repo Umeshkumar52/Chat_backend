@@ -12,7 +12,7 @@ try {
     if(req.file.mimetype=='video/mp4'){
        const cloudinary_res=await cloudinary.v2.uploader.upload(req.file.path, 
            { resource_type: "video", 
-            public_id: "video_upload"
+            public_id:"video_"+Date.now()
            }
         )
         response=await userMediaCollectionSchema.create({
@@ -22,15 +22,20 @@ try {
             url:cloudinary_res.url,
             playback_url:cloudinary_res.playback_url,
             duration:cloudinary_res.duration,
+            public_id:cloudinary_res.public_id,
             url_type:cloudinary_res.format
         })
     }else{
-        const cloudinary_res=await cloudinary.v2.uploader.upload(req.file.path)
+        const cloudinary_res=await cloudinary.v2.uploader.upload(req.file.path,{
+            resource_type:'image',
+            public_id:"img_"+Date.now()
+        })
         response=await userMediaCollectionSchema.create({
             author:user_id,
             description,
             secure_url:cloudinary_res.secure_url,
             url:cloudinary_res.url,
+            public_id:cloudinary_res.public_id,
             url_type:cloudinary_res.format
         })
         }    
@@ -42,7 +47,7 @@ try {
 } catch (error) {
    return res.status(512).json({
         success:false,
-        message:error
+        message:"Failed to upload"
     })
 }
 }
@@ -51,7 +56,7 @@ export const newStory=async(req,res)=>{
         const{_id}=req.body
        const cloudinary_res=await cloudinary.v2.uploader.upload(req.file.path, 
             { resource_type: "video", 
-             public_id: "video_upload"
+             public_id:"story_"+Date.now()
             })
          const story=await storySchema.create({
            author:_id,
@@ -59,17 +64,18 @@ export const newStory=async(req,res)=>{
            url:cloudinary_res.url,
            playback_url:cloudinary_res.playback_url,
            duration:cloudinary_res.duration,
+           public_id:cloudinary_res.public_id,
            url_type:cloudinary_res.format
          })
         const response=await user.findByIdAndUpdate(_id,{$push:{myStory:story._id}})
-        return res.status(200).json({
+        res.status(200).json({
              success:true,
              message:response
          })
     } catch (error) {
-        return res.status(500).json({
+        res.status(500).json({
             success:false,
-            message:error
+            message:"Failed to Upload Story"
         })
     }
 }
@@ -92,17 +98,6 @@ export const getPosts=async(req,res)=>{
     try {
         const response=await userMediaCollectionSchema.find({})
         .populate({path:"author",select:["_id","Name","UserName","avatar","Followers"]})
-        // .populate({
-        //     path:"Comments",
-        //     populate:{
-        //         path:"author",
-        //         model:"user",
-        //         select:["_id","Name","UserName",]
-        //     }
-        // })
-        // .populate({path:"likes",select:["_id","Name","UserName",]})
-        // .populate({path:"disLikes",select:["_id","Name","UserName",]})
-       
         res.status(200).json({
             success:true,
             message:response
@@ -126,12 +121,12 @@ export const updateToPost=async(req,res)=>{
         })
         io.emit("comment",response)
        const post=await userMediaCollectionSchema.updateOne({_id:post_id},{$push:{Comments:response._id}})       
-      return res.status(200).json({
+       res.status(200).json({
         success:true,
         message:response
        })
     } catch (error) {
-       return res.status(412).json({
+        res.status(412).json({
             success:false,
             message:error
            })   
@@ -141,12 +136,12 @@ export const post_Comments=async(req,res)=>{
     try {
         const response=await comment.find(req.params)
         .populate({path:"author",select:["_id","Name","UserName","avatar"]})
-        return res.status(200).json({
+         res.status(200).json({
             success:true,
             message:response
         })
     } catch (error) {
-        return res.status(512).json({
+        res.status(512).json({
             success:false,
             message:error
         })
@@ -178,12 +173,12 @@ export const disLikeAPost=async(req,res)=>{
     try {
         const {post_id,author}=req.params
         const response=await userMediaCollectionSchema.findByIdAndUpdate(post_id,{$set:{$push:{disLikes:author}}})
-        res.status(200).json({
+       return res.status(200).json({
             success:true,
             message:response
         })
     } catch (error) {
-        res.status(512).json({
+       return res.status(512).json({
             success:false,
             message:error
         })
@@ -191,13 +186,35 @@ export const disLikeAPost=async(req,res)=>{
 }
 export const deletePost=async(req,res)=>{
     try {
-        const response=await userMediaCollectionSchema.findByIdAndDelete(req.params._id)
-        res.status(200).json({
+        console.log(req.params);
+        
+        const{public_id,post_id}=req.params
+        const response=await userMediaCollectionSchema.findByIdAndDelete(post_id)
+        await cloudinary.v2.uploader.destroy(public_id)
+       res.status(200).json({
             success:true,
-            message:response
+            message:"Post Delete Successfully"
         })
     } catch (error) {
-        return res.status(512).json({
+         res.status(512).json({
+            success:false,
+            message:error
+        })
+    }
+}
+export const deleteStory=async(req,res)=>{
+    try {
+        const{public_id,post_id}=req.params
+        const response=await storySchema.findByIdAndDelete(post_id)
+        await cloudinary.v2.uploader.destroy(public_id,{
+            resource_type:"video"
+        })
+       res.status(200).json({
+            success:true,
+            message:"Post Delete Successfully"
+        })
+    } catch (error) {
+         res.status(512).json({
             success:false,
             message:error
         })

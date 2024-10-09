@@ -9,4 +9,5 @@ router
 .put('/commentToReel/:post_id',commentToReel)
 .get('/reelComment/:post_id',reel_Comments)
 .put('/likeToReel/:post_id/:author',likeToReel)
+.delete('/deleteReel/:post_id/:public_id')
 export default router

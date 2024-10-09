@@ -48,10 +48,8 @@ io.use((socket, next) => {
   next();
 });
 io.on("connection", (socket) => {
-  socket.on("rooms", (data) => {
-    socket.join(data?data :socket.id); 
-    console.log(data,"room join");
-       
+  socket.on("rooms", (data) => {   
+    socket.join(data.UserName?data.UserName:data);        
   });
   socket.on("private_msg", (data) => {
     data.type="incoming"
@@ -67,21 +65,25 @@ io.on("connection", (socket) => {
       socket.to(data.to).emit("typingStatus", data.status);
     },1000)
   });
-  let users = [];
+  // socket.on("online",(data)=>{
+  //   console.log(data);
+  //   socket.broadcast.emit("online",data)
+  // })
+  let onlineUsers = [];
   for (let [id, socket] of io.of("/").sockets) {
-    users.push({
+    onlineUsers.push({
       userId: id,
       userName: socket.userName,
       online:true
     });
-  }
-  socket.emit("users", users);
-  socket.on("offline",()=>{
-   users.push(users.filter((user)=>{
+  }  
+  socket.emit("online", onlineUsers);
+  socket.on("offline",(data)=>{
+   onlineUsers.push(onlineUsers.filter((user)=>{
     if( user.userId==socket.id){
-        users.online=false
+        onlineUsers.online=false
     }
-    socket.emit("users",users)
+    socket.emit("offline",onlineUsers)
    }))
   })
 });

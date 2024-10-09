@@ -12,6 +12,7 @@ const userMediaCollectionSchema=new mongoose.Schema({
     playback_url:String,
     secure_url:String,
     duration:String,
+    public_id:String,
     url_type:{
         type:String,
         require:true

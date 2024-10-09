@@ -6,7 +6,7 @@ const SaveTextCom=async(req,res)=>{
     try {            
         const{sender_id,message,time,type,msg_type}=req.body
         const {_id}=req.params        
-        const existChat=await Conversation.findOne({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]})       
+        const existChat=await Conversation.findOne({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]}) 
         if(existChat){         
             const response=await Conversation.updateOne({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]},{$push:{chats:{
                reciever_id:_id,
@@ -55,7 +55,6 @@ const SaveSocialCom=async(req,res)=>{
          if(req.file.mimetype=='video/mp4'){
          imgResult=await cloudinary.v2.uploader.upload(req.file.path, 
             { resource_type: "video", 
-              public_id: "dog_closeup",
               quality:low,
               transformation:[
                 { width:200, height:240, quality:low,crop: "fill",audio_codec: "none" }, 
@@ -78,6 +77,7 @@ const SaveSocialCom=async(req,res)=>{
                url_type:imgResult.format,
                time,
                secure_url:imgResult.secure_url,
+               public_id:imgResult.public_id
              }}})       
              res.status(200).json({
                 success:true,
@@ -95,15 +95,14 @@ const SaveSocialCom=async(req,res)=>{
                url_type:imgResult.format,
                time,
                secure_url:imgResult.secure_url,
+               public_id:imgResult.public_id
         }
        })
       res.status(200).json({
         success:true,
         message:response
        })
-      }
-    console.log(imgResult);
-      
+      }      
    }
    } catch (error) {
       res.status(512).json({

@@ -24,9 +24,11 @@ const user=new mongoose.Schema({
     avatar:{
         type:String
     },
+    avatar_public_id:String,
     profileBanner:{
        type:String
     },
+    profileBanner_public_id:String,
     token:{
         type:String,
     },

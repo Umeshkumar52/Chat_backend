@@ -22,13 +22,11 @@ export const newReel=async(req,res)=>{
     try {
         const{user_id}=req.params
         const{tittle}=req.body
-        console.log(user_id);
         const cloudinary_res=await cloudinary.v2.uploader.upload(req.file.path, 
             { resource_type: "video", 
-             public_id: "video_uploads"
+             public_id:"reel_"+Date.now()
             }
          )
-         console.log(cloudinary_res);
          const response=await reelSchema.create({
             author:user_id,
             secure_url:cloudinary_res.secure_url,
@@ -36,10 +34,9 @@ export const newReel=async(req,res)=>{
             playback_url:cloudinary_res.playback_url,
             duration:cloudinary_res.duration,
             url_type:cloudinary_res.format,
+            public_id:cloudinary_res.public_id,
             tiile:tittle
         })
-        console.log(response);
-        
         await user.findByIdAndUpdate(user_id,{$push:{myReels:response._id}})
        return res.status(200).json({
             success:true,
@@ -48,7 +45,7 @@ export const newReel=async(req,res)=>{
     } catch (error) {
         return res.status(502).json({
             success:false,
-            message:error
+            message:"Failed to Upload Reel"
         })
     }
 }
@@ -56,19 +53,14 @@ export const commentToReel=async(req,res)=>{
     try {
         let io=getIo()
         const{post_id}=req.params
-        const{author,commit}=req.body 
-        console.log(req,body,req.params);
-                         
+        const{author,commit}=req.body                          
         const response=await comment.create({
             commit,
             author,
             post_id
         })
-        console.log(response);
         io.emit("reelComment",response)        
        const post=await reelSchema.updateOne({_id:post_id},{$push:{Comments:response._id}})
-       console.log(post);
-       
       return res.status(200).json({
         success:true,
         message:response
@@ -95,7 +87,6 @@ export const reel_Comments=async(req,res)=>{
         })
     }
 }
-
 export const likeToReel=async(req,res)=>{
     try {
         let io=getIo()
@@ -105,8 +96,8 @@ export const likeToReel=async(req,res)=>{
         // if(existLike){
         //    return
         // }
-        const post=await reelSchema.findByIdAndUpdate(_id,{$push:{likes:author}})
-        io.emit("reelLike",post)
+        const post=await reelSchema.findByIdAndUpdate(post_id,{$push:{likes:author}})
+        io.emit("reelLike",author)
       res.status(200).json({
      success:true,
      message:"successfull"
@@ -130,6 +121,24 @@ export const particularUserReel=async(req,res)=>{
         return res.status(512).json({
             success:false,
             message:error
+        })
+    }
+}
+export const deletReel=async(req,res)=>{
+    try {
+        const{public_id,post_id}=req.params
+        const response=await reelSchema.findByIdAndDelete(post_id)
+        await cloudinary.v2.uploader.destroy(public_id,{
+            resource_type:"video"
+        })
+       return res.status(200).json({
+            success:true,
+            message:"Reel Deleted Successfully"
+        })
+    } catch (error) {
+       return res.status(400).json({
+            success:false,
+            message:"Unable To Reel Delete"
         })
     }
 }

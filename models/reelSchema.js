@@ -23,10 +23,7 @@ const reelSchema=new mongoose.Schema({
         type:mongoose.Schema.Types.ObjectId,
         ref:"user"
     }],
-    disLikes:[{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:"user"
-    }],
+    public_id:String,
     Comments:[{
         type:mongoose.Schema.Types.ObjectId,
         ref:"comment"

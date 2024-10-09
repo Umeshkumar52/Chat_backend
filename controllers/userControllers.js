@@ -17,16 +17,15 @@ const createUser=async(req,res)=>{
             message:"Account allready exist"
         })}
         const userSave=await user.create(req.body) 
-        userSave.save() 
         if(req.file){
-            avatar= await cloudinary.v2.uploader.upload(req.file.path,{
-                transformation:{
-                    width:200,height:240, crop:"scale"
-                 }
-            }
-            )
+           const avatar= await cloudinary.v2.uploader.upload(req.file.path,{
+                resource_type:'image',
+                public_id:"avatar_"+Date.now()
+            })
             userSave.avatar=avatar.secure_url  
+            userSave.avatar_public_id=avatar.public_id
         } 
+        userSave.save() 
         const token = await userSave.genJwtToken() 
        userSave.token=token
         user.Password=undefined
@@ -38,15 +37,17 @@ const createUser=async(req,res)=>{
     } catch (error) {
       return res.status(512).json({
             success:false,
-            message:"User Not Save, Try again"
+            message:"Please Create Account Again"
         }) 
     }
  }
  const updateUser=async(req,res)=>{
     try { 
         const {_id,type}=req.body
-        const cloudinary_res=await cloudinary.v2.uploader.upload(req.file.path)
-        console.log(cloudinary_res);
+        const cloudinary_res=await cloudinary.v2.uploader.upload(req.file.path,{
+            resource_type:'image',
+            public_id:"profileUpdate_"+Date.now()
+        })
         let response;
         if(type=="profile"){  
          response=await user.findByIdAndUpdate(_id,{avatar:cloudinary_res.secure_url})
@@ -103,29 +104,13 @@ const createUser=async(req,res)=>{
  const userFollowing=async(req,res)=>{
     try {
         const {user_id}=req.params;
-        const response=await user.findById(user_id).select("Following")
+        const response=await user.findById(user_id).select(["Following","Followers"])
         .populate({
             path:'Following',
             select:['UserName','avatar','Followers','Name']
         })
-       return res.status(200).json({
-            success:true,
-            message:response
-        })
-    } catch (error) {
-        return  res.status(500).json({
-            success:false,
-            message:error
-        })
-    }
- }
- const userFollower=async(req,res)=>{
-    try {
-        const {user_id}=req.params;
-        const response=await user.findById(user_id).select("Followers")
         .populate({
             path:'Followers',
-            model:"user",
             select:['UserName','avatar','Followers','Name']
         })
        return res.status(200).json({
@@ -185,15 +170,13 @@ const createUser=async(req,res)=>{
  const userWithAllPost=async(req,res)=>{
     try {
         const{user_id}=req.params
-        console.log(user_id);
-        
         const response=await user.findById(user_id)
         .populate({
             path:"myPosts",
             populate:{
                 path:"author",
                 model:"user",
-                select:["_id","Name","UserName"]
+                select:["_id","Name","UserName","avatar"]
             }
         })
         .populate({
@@ -201,7 +184,7 @@ const createUser=async(req,res)=>{
             populate:{
                 path:"author",
                 model:"user",
-                select:["_id","Name","UserName"]
+                select:["_id","Name","UserName","avatar"]
             }
         })
 
@@ -249,4 +232,4 @@ const createUser=async(req,res)=>{
         })
     }
  }
-export {createUser,userWithAllPost,userInf,unfollowing,getUser,userFollower,userFollowing,following,logout,login,updateUser}
+export {createUser,userWithAllPost,userInf,unfollowing,getUser,userFollowing,following,logout,login,updateUser}
