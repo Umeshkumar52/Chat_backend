@@ -3,6 +3,6 @@
 
 # ignore ALL files in ANY directory named temp
 # temp/
-*.env
-*package.json
+.env
+.package.json
 
