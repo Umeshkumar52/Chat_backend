@@ -1,6 +1,4 @@
 import conversation from '../models/conversation.js'
-import user from "../models/user.js";
-import path from "path";
 import cloudinary from 'cloudinary'
 const SaveTextCom=async(req,res)=>{
     try {            
