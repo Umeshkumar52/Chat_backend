@@ -23,8 +23,8 @@ app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors({
-  origin:"http://localhost:3000",
-  credentials:true,
+  origin:"https://chat-client-cgiv.onrender.com",
+  credentials:false,
    }))
 cloudinary.config({ 
   cloud_name:process.env.CLOUD_NAME, 
@@ -33,7 +33,7 @@ cloudinary.config({
 });
 const io = new Server(server, {
   cors: {
-    origin: "https://chat-client-cgiv.onrender.com/",
+    origin: "https://chat-client-cgiv.onrender.com",
     credentials: false,
   },
 });
