@@ -25,7 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 const corOptions={
   // origin:"http://localhost:3000",
-  origin:"https://chat-client-cgiv.onrender.com/",
+  origin:"https://chat-client-cgiv.onrender.com",
   credential:false
    }
 app.use(cors())
