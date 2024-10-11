@@ -13,7 +13,8 @@ import postsRoutes from './routers/postsRoutes.js'
 import reelsRoutes from './routers/reelsRoutes.js'
 import friendReqRoutes from './routers/friendReqRoutes.js'
 import { setIo } from "./midilwares/IoInstance.js";
-// import io from "./midilwares/IoInstance.js";
+
+dbConnect()
 const app = express();
 app.use(cookieParser());
 dotenv.config()
@@ -22,23 +23,21 @@ const PORT = process.env.PORT || 5002;
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(cors({
-  origin:"http://localhost:3000",
+const corOptions={
+  // origin:"http://localhost:3000",
+  origin:"https://chat-client-cgiv.onrender.com",
   credentials:true,
-   }))
+   }
+app.use(cors(corOptions))
 cloudinary.config({ 
   cloud_name:process.env.CLOUD_NAME, 
   api_key:process.env.API_KEY, 
   api_secret:process.env.API_SECRET,
 });
 const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:3000",
-    credentials: false,
-  },
+  cors:corOptions,
 });
 setIo(io)
-dbConnect()
 io.use((socket, next) => {
   const userName = socket.handshake.auth.userName;
   if (!userName) {
@@ -48,7 +47,7 @@ io.use((socket, next) => {
   next();
 });
 io.on("connection", (socket) => {
-  socket.on("rooms", (data) => {   
+  socket.on("rooms", (data) => {  
     socket.join(data.UserName?data.UserName:data);        
   });
   socket.on("private_msg", (data) => {
