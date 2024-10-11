@@ -26,15 +26,15 @@ app.use(express.json());
 const corOptions={
   // origin:"http://localhost:3000",
   origin:"https://chat-client-cgiv.onrender.com",
-  credential:false
+  credential:true
    }
-app.use(cors())
+app.use(cors(corOptions))
 cloudinary.config({ 
   cloud_name:process.env.CLOUD_NAME, 
   api_key:process.env.API_KEY, 
   api_secret:process.env.API_SECRET,
 });
-const io = new Server(server,cors())
+const io = new Server(server,{cors:corOptions})
 setIo(io)
 io.use((socket, next) => {
   const userName = socket.handshake.auth.userName;
@@ -84,12 +84,6 @@ io.on("connection", (socket) => {
    }))
   })
 });
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-    credentials: true,
-  })
-);
 process.on('warning', e => console.warn(e.stack));
 app.use('/api/auth',userRoutes)
 app.use('/api/auth/post',postsRoutes)
