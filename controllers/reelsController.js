@@ -126,8 +126,8 @@ export const particularUserReel=async(req,res)=>{
 }
 export const deletReel=async(req,res)=>{
     try {
-        const{public_id,post_id}=req.params
-        const response=await reelSchema.findByIdAndDelete(post_id)
+        const{public_id,reel_id}=req.params
+        const response=await reelSchema.findByIdAndDelete(reel_id)
         await cloudinary.v2.uploader.destroy(public_id,{
             resource_type:"video"
         })
