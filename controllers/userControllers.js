@@ -4,8 +4,8 @@ import cloudinary from 'cloudinary'
 import {getIo} from '../midilwares/IoInstance.js'
 const cookieOptions={
     maxAge:new Date(Date.now()+24*60*60*1000),
-    httpOnly:true,
-    secure:true,
+    httpOnly:false,
+    secure:false,
     sameSite:'None'
 }
 const createUser=async(req,res)=>{
