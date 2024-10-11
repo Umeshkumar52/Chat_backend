@@ -25,10 +25,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 const corOptions={
   // origin:"http://localhost:3000",
-  origin:"https://chat-client-cgiv.onrender.com",
+  origin:"https://chat-client-cgiv.onrender.com/",
   credential:true
    }
-app.options('*',cors())
+app.options('/login',cors())
 app.use(cors(corOptions))
 cloudinary.config({ 
   cloud_name:process.env.CLOUD_NAME, 
