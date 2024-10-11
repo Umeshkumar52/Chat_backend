@@ -28,7 +28,6 @@ const corOptions={
   origin:"https://chat-client-cgiv.onrender.com/",
   credential:true
    }
-app.options('/login',cors())
 app.use(cors(corOptions))
 cloudinary.config({ 
   cloud_name:process.env.CLOUD_NAME, 
