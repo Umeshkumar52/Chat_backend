@@ -2,7 +2,7 @@ import publicIdHandler from '../midilwares/publicIdHandler.js'
 import chatsSchema from '../models/chatsSchema.js'
 import conversation from '../models/conversation.js'
 import cloudinary from 'cloudinary'
-const SaveTextCom=async(req,res)=>{
+export const SaveTextCom=async(req,res)=>{
     try {            
         const{sender_id,message,msg_type}=req.body
         const {_id}=req.params   
@@ -39,7 +39,7 @@ const SaveTextCom=async(req,res)=>{
        }) 
    }
 }
-const SaveSocialCom=async(req,res)=>{
+export const SaveSocialCom=async(req,res)=>{
    try {
       const{_id,sender_id}=req.params     
       let imgResult; 
@@ -93,7 +93,7 @@ const SaveSocialCom=async(req,res)=>{
       })
    }
 }
-const GetAllMessages=async(req,res)=>{
+export const GetAllMessages=async(req,res)=>{
    // const {sender_id}=req.body
    const {_id,sender_id}=req.params
    try {
@@ -112,7 +112,7 @@ const GetAllMessages=async(req,res)=>{
       })
    }
 }
- const deleteChats=async(req,res)=>{
+ export const deleteChats=async(req,res)=>{
    try {
       const{textMsgData,fileMsgData}=req.body;
       const{conversation_id}=req.params;
@@ -145,4 +145,3 @@ const GetAllMessages=async(req,res)=>{
        })
    }
 }
-export {SaveTextCom,deleteChats,SaveSocialCom,GetAllMessages}

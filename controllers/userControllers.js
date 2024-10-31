@@ -8,7 +8,7 @@ const cookieOptions={
     httpOnly:true,
     secure:true,
 }
-const createUser=async(req,res)=>{
+export const createUser=async(req,res)=>{
     try {       
         const {Email}=req.body
         const exist=await user.findOne({Email:Email})
@@ -42,7 +42,7 @@ const createUser=async(req,res)=>{
         }) 
     }
  }
- const updateUser=async(req,res)=>{
+export const updateUser=async(req,res)=>{
     try { 
         const {_id,type}=req.body
         const cloudinary_res=await cloudinary.v2.uploader.upload(req.file.path,{
@@ -66,7 +66,7 @@ const createUser=async(req,res)=>{
         })
     }
  }
- const following=async(req,res)=>{
+export const following=async(req,res)=>{
     try {
         let io=getIo()
         const{requester,reciever}=req.params          
@@ -95,7 +95,7 @@ const createUser=async(req,res)=>{
         })
     }
  }
- const unfollowing=async(req,res)=>{
+export const unfollowing=async(req,res)=>{
     try {
         let io=getIo()
         const{requester,reciever}=req.params          
@@ -113,7 +113,7 @@ const createUser=async(req,res)=>{
         })
     }
  }
- const userFollowing=async(req,res)=>{
+export const userFollowing=async(req,res)=>{
     try {
         const {user_id}=req.params;
         const response=await user.findById(user_id).select(["Following","Followers"])
@@ -136,7 +136,7 @@ const createUser=async(req,res)=>{
         })
     }
  }
- const login=async(req,res)=>{
+export const login=async(req,res)=>{
     try {
         const{UserName,Email,Phone,Password}=req.body
         const existUser=await user
@@ -162,13 +162,13 @@ const createUser=async(req,res)=>{
         })
     }
  }
- const logout=async(req,res)=>{
+export const logout=async(req,res)=>{
     try {
          res.cookie("token",null,{
             maxAge:null,
             httpOnly:true
          })
-        return res.status(200).json({
+         res.status(200).json({
             success:true,
             message:"Logout Successfully"
         })
@@ -179,7 +179,7 @@ const createUser=async(req,res)=>{
        }) 
     }
  }
- const userWithAllPost=async(req,res)=>{
+export const userWithAllPost=async(req,res)=>{
     try {
         const response=await user.find(req.params)
         .populate({
@@ -210,7 +210,7 @@ const createUser=async(req,res)=>{
         })
     }
  }
- const userInf=async(req,res)=>{
+export const userInf=async(req,res)=>{
     try {
         const {Email_Phone,UserName}=req.body
         const response=await user.find({Email_Phone})
@@ -225,7 +225,7 @@ const createUser=async(req,res)=>{
         })
     }
  }
- const searchUsers=async(req,res)=>{
+export const searchUsers=async(req,res)=>{
     try {
         const{UserName}=req.params
         if(UserName.length>2){
@@ -242,4 +242,3 @@ const createUser=async(req,res)=>{
         })
     }
  }
-export {createUser,searchUsers,userWithAllPost,userInf,unfollowing,userFollowing,following,logout,login,updateUser}
