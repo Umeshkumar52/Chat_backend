@@ -5,8 +5,9 @@ import {getIo} from '../midilwares/IoInstance.js'
 import notification from "../models/notificationSchema.js";
 const cookieOptions={
     maxAge:new Date(Date.now()+24*60*60*1000),
-    httpOnly:false,
+    httpOnly:true,
     secure:false,
+    sameSite:'None'
 }
 export const createUser=async(req,res)=>{
     try {       
