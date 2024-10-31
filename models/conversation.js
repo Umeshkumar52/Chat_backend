@@ -1,10 +1,5 @@
 import mongoose from "mongoose";
 const conversation=new mongoose.Schema({
-    user:{
-        type:mongoose.Schema.Types.ObjectId,
-        user:"user",
-        require:true
-    },
     sender_id:{
         type:String,
         require:true
@@ -13,15 +8,9 @@ const conversation=new mongoose.Schema({
         type:String,
         require:true
     },
-    chats:{
-        type:Array,
-        require:true
-    },
-    type:{
-        type:String,
-        require:true
-    }
-},
-{timestamps:true}
-)
+    chats:[{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'chatsSchema'
+    }],
+},{timestamps:true})
 export default mongoose.model("conversation",conversation)

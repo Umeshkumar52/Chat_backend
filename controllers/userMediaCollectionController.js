@@ -4,15 +4,18 @@ import user from '../models/user.js'
 import comment from '../models/commentsSchema.js'
 import storySchema from '../models/storySchema.js'
 import { getIo } from '../midilwares/IoInstance.js'
+import notificationHandler from '../midilwares/notificationHandler.js'
+import publicIdHandler from '../midilwares/publicIdHandler.js'
 export const newPost=async(req,res)=>{
 try {
+    const io=getIo()
     const {user_id}=req.params
     const{description,}=req.body
     let response;
     if(req.file.mimetype=='video/mp4'){
        const cloudinary_res=await cloudinary.v2.uploader.upload(req.file.path, 
            { resource_type: "video", 
-            public_id:"video_"+Date.now()
+            public_id:publicIdHandler(req.file,user_id,'video')
            }
         )
         response=await userMediaCollectionSchema.create({
@@ -28,7 +31,9 @@ try {
     }else{
         const cloudinary_res=await cloudinary.v2.uploader.upload(req.file.path,{
             resource_type:'image',
-            public_id:"img_"+Date.now()
+            unique_filename:false,
+            overwrite:true,
+            public_id:publicIdHandler(req.file,user_id,'image')
         })
         response=await userMediaCollectionSchema.create({
             author:user_id,
@@ -38,8 +43,12 @@ try {
             public_id:cloudinary_res.public_id,
             url_type:cloudinary_res.format
         })
-        }    
-    await user.findByIdAndUpdate(user_id,{$push:{myPosts:response._id}})
+        }  
+        const User=await user.findById(user_id)
+        User.myPosts.push(response._id)
+        User.save()  
+        io.to(User.UserName).emit("post","Posted")
+        notificationHandler(User,response)
     res.status(200).json({
         success:true,
         message:response
@@ -53,10 +62,11 @@ try {
 }
 export const newStory=async(req,res)=>{
     try {
+        const io=getIo()
         const{_id}=req.body
        const cloudinary_res=await cloudinary.v2.uploader.upload(req.file.path, 
             { resource_type: "video", 
-             public_id:"story_"+Date.now()
+             public_id:publicIdHandler(req.file,_id)
             })
          const story=await storySchema.create({
            author:_id,
@@ -68,6 +78,7 @@ export const newStory=async(req,res)=>{
            url_type:cloudinary_res.format
          })
         const response=await user.findByIdAndUpdate(_id,{$push:{myStory:story._id}})
+        io.to(response.UserName).emit("post","Posted")
         res.status(200).json({
              success:true,
              message:response
@@ -96,7 +107,24 @@ export const allStories=async(req,res)=>{
 }
 export const getPosts=async(req,res)=>{
     try {
-        const response=await userMediaCollectionSchema.find({})
+        const{limit,offset}=req.params
+        const response=await userMediaCollectionSchema.find({}).skip(offset).limit(limit)
+        .populate({path:"author",select:["_id","Name","UserName","avatar","Followers"]})
+        res.status(200).json({
+            success:true,
+            message:response
+        })
+    } catch (error) {
+        res.status(412).json({
+            success:false,
+            message:error
+        })
+    }
+}
+export const Post=async(req,res)=>{
+    try {
+        const{_id}=req.params
+        const response=await userMediaCollectionSchema.findById(_id)
         .populate({path:"author",select:["_id","Name","UserName","avatar","Followers"]})
         res.status(200).json({
             success:true,
@@ -169,6 +197,23 @@ export const likeAPost=async(req,res)=>{
         })
     }
 }
+export const dish_likeAPost=async(req,res)=>{
+    try {
+        let io=getIo()
+        const {post_id,author}=req.params;
+        const post=await userMediaCollectionSchema.findByIdAndUpdate(post_id,{$pull:{likes:author}})
+        io.emit("comment",post)
+      res.status(200).json({
+     success:true,
+     message:post
+    })
+    } catch (error) {
+        res.status(512).json({
+            success:false,
+            message:error
+        })
+    }
+}
 export const disLikeAPost=async(req,res)=>{
     try {
         const {post_id,author}=req.params
@@ -186,11 +231,9 @@ export const disLikeAPost=async(req,res)=>{
 }
 export const deletePost=async(req,res)=>{
     try {
-        console.log(req.params);
-        
         const{public_id,post_id}=req.params
-        const response=await userMediaCollectionSchema.findByIdAndDelete(post_id)
         await cloudinary.v2.uploader.destroy(public_id)
+        const response=await userMediaCollectionSchema.findByIdAndDelete(post_id)
        res.status(200).json({
             success:true,
             message:"Post Delete Successfully"
@@ -205,10 +248,10 @@ export const deletePost=async(req,res)=>{
 export const deleteStory=async(req,res)=>{
     try {
         const{public_id,post_id}=req.params
-        const response=await storySchema.findByIdAndDelete(post_id)
         await cloudinary.v2.uploader.destroy(public_id,{
             resource_type:"video"
         })
+        const response=await storySchema.findByIdAndDelete(post_id)
        res.status(200).json({
             success:true,
             message:"Post Delete Successfully"

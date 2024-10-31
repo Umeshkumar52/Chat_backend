@@ -1,35 +1,31 @@
+import publicIdHandler from '../midilwares/publicIdHandler.js'
+import chatsSchema from '../models/chatsSchema.js'
 import conversation from '../models/conversation.js'
 import cloudinary from 'cloudinary'
 const SaveTextCom=async(req,res)=>{
     try {            
-        const{sender_id,message,time,type,msg_type}=req.body
-        const {_id}=req.params        
-        const existChat=await conversation.findOne({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]}) 
-        if(existChat){         
-            const response=await conversation.updateOne({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]},{$push:{chats:{
+        const{sender_id,message,msg_type}=req.body
+        const {_id}=req.params   
+            const chat=await chatsSchema.create({
                reciever_id:_id,
                sender_id:sender_id,
                msg_type,
-               time,
+               isRead:false,
                message
-              }}}) 
+            }) 
+        const existChat=await conversation.findOne({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]}) 
+        if(existChat){      
+            const response=await conversation.updateOne({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]},{$push:{chats:chat._id}}) 
              return res.status(200).json({
                success:true,
                message:response
              })
-      }
-          else{   
+      }else{   
        const response=await conversation.create({
          sender_id:sender_id,
          reciever_id:_id,
-              chats:{ 
-               reciever_id:_id,
-               sender_id:sender_id,
-               msg_type,
-               time,
-               message
-            }
-       })
+              chats:chat._id
+            })
       return res.status(200).json({
         success:true,
         message:response
@@ -46,55 +42,39 @@ const SaveTextCom=async(req,res)=>{
 const SaveSocialCom=async(req,res)=>{
    try {
       const{_id,sender_id}=req.params     
-      const {time}=req.body
-      if(req.file){
-         const existChat=await conversation.findOne({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]})   
-         let imgResult;       
+      let imgResult; 
+      let response; 
+      if(req.file){  
          if(req.file.mimetype=='video/mp4'){
-         imgResult=await cloudinary.v2.uploader.upload(req.file.path, 
-            { resource_type: "video", 
-              quality:low,
-              transformation:[
-                { width:200, height:240, quality:low,crop: "fill",audio_codec: "none" }, 
-               ],                                   
-              eager_async: true,
-              eager_notification_url: "http://localhost:3000/chats"
+         imgResult=await cloudinary.v2.uploader.upload(req.file.path,{
+             resource_type: "video", 
+               public_id:publicIdHandler(req.file,sender_id,'video'),
               })                 
         }else{
           imgResult=await cloudinary.v2.uploader.upload(req.file.path,{
+            public_id:publicIdHandler(req.file,sender_id,'img'),
             transformation:{
                width:200,height:240, crop:"scale",
             }
           }) 
         }
-         if(existChat){                 
-             const response=await conversation.updateOne({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]},{$push:{chats:{
-               reciever_id:_id,
-               sender_id:sender_id,
-               msg_type:"file",
-               url_type:imgResult.format,
-               time,
-               secure_url:imgResult.secure_url,
-               public_id:imgResult.public_id
-             }}})       
-             res.status(200).json({
-                success:true,
-                message:imgResult,response
-               })
-      }
-          else{   
-       const response=await conversation.create({
+        const chat=await chatsSchema.create({
+         reciever_id:_id,
+         sender_id:sender_id,
+         msg_type:"file",
+         url_type:imgResult.format,
+         isRead:false,
+         secure_url:imgResult.secure_url,
+         public_id:imgResult.public_id
+       }) 
+        const existChat=await conversation.findOne({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]}) 
+         if(existChat){                
+         response=await conversation.updateOne({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]},{$push:{chats:chat._id}})       
+           }else{   
+         response=await conversation.create({
         sender_id:sender_id,
         reciever_id:_id,
-        chats:{
-               reciever_id:_id,
-               sender_id:sender_id,
-               msg_type:"file",
-               url_type:imgResult.format,
-               time,
-               secure_url:imgResult.secure_url,
-               public_id:imgResult.public_id
-        }
+        chats:chat._id
        })
       res.status(200).json({
         success:true,
@@ -102,6 +82,10 @@ const SaveSocialCom=async(req,res)=>{
        })
       }      
    }
+   res.status(200).json({
+      success:true,
+      message:response
+     })
    } catch (error) {
       res.status(512).json({
          success:false,
@@ -114,6 +98,9 @@ const GetAllMessages=async(req,res)=>{
    const {_id,sender_id}=req.params
    try {
       const response=await conversation.find({$or:[{$and:[{reciever_id:sender_id},{sender_id:_id}]},{$and:[{reciever_id:_id},{sender_id:sender_id}]}]})
+      .populate({
+         path:"chats"
+      })
       res.status(200).json({
          success:true,
          message:response
@@ -125,4 +112,37 @@ const GetAllMessages=async(req,res)=>{
       })
    }
 }
-export {SaveTextCom,SaveSocialCom,GetAllMessages}
+ const deleteChats=async(req,res)=>{
+   try {
+      const{textMsgData,fileMsgData}=req.body;
+      const{conversation_id}=req.params;
+      console.log(req.body,req.params);
+      
+       if(textMsgData.length>1){    
+        await chatsSchema.deleteMany({_id:{$in:textMsgData}})
+         await conversation.updateMany({_id:conversation_id},{$pull:{chats:{$in:textMsgData}}})
+       }else if(textMsgData.length==1){       
+           await chatsSchema.deleteOne({_id:{$in:textMsgData}})
+           await conversation.updateOne({_id:conversation_id},{$pull:{chats:{$in:fileMsgData}}}) 
+       }
+         if(fileMsgData.length>1){
+            await cloudinary.v2.api.delete_resources(fileMsgData.public_id)
+            await chatsSchema.deleteMany(fileMsgData.chatIds)
+            await conversation.updateMany({_id:conversation_id},{$pull:{chats:{$in:fileMsgData.chat_Ids}}})
+         }else if(fileMsgData.length==1){
+            await cloudinary.v2.api.delete_resources(fileMsgData.public_id)
+           await chatsSchema.deleteOne(fileMsgData.chatIds)
+           await conversation.updateMany({_id:conversation_id},{$pull:{chats:{$in:fileMsgData.chat_Ids}}})
+         }
+       res.status(200).json({
+           success:true,
+           message:"Deleted Successfully"
+       })
+   } catch (error) {
+       res.status(400).json({
+           success:false,
+           message:"Unable To delete chats"
+       })
+   }
+}
+export {SaveTextCom,deleteChats,SaveSocialCom,GetAllMessages}

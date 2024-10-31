@@ -9,5 +9,5 @@ const commentsSchema=new mongoose.Schema({
         ref:"userMediaCollectionSchema"
     },
     commit:String
-})
+},{timestamps:true})
 export default mongoose.model("comment",commentsSchema)

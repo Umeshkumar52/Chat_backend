@@ -12,8 +12,8 @@ import cloudinary from 'cloudinary'
 import postsRoutes from './routers/postsRoutes.js'
 import reelsRoutes from './routers/reelsRoutes.js'
 import friendReqRoutes from './routers/friendReqRoutes.js'
+import notificationRoutes from './routers/notificationRoutes.js'
 import { setIo } from "./midilwares/IoInstance.js";
-
 dbConnect()
 const app = express();
 app.use(cookieParser());
@@ -22,19 +22,22 @@ const server = createServer(app);
 const PORT = process.env.PORT || 5002;
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(express.json())
 const corOptions={
   // origin:"http://localhost:3000",
-  origin:"https://chat-client-cgiv.onrender.com/",
-  credential:false
+  origin:process.env.CLIENT_URL,
+  credential:true
    }
-app.use(cors())
+app.use(cors(corOptions))
 cloudinary.config({ 
   cloud_name:process.env.CLOUD_NAME, 
   api_key:process.env.API_KEY, 
   api_secret:process.env.API_SECRET,
+  timeout:3600000
 });
-const io = new Server(server,cors())
+const io = new Server(server,{
+  cors:corOptions
+})
 setIo(io)
 io.use((socket, next) => {
   const userName = socket.handshake.auth.userName;
@@ -45,8 +48,8 @@ io.use((socket, next) => {
   next();
 });
 io.on("connection", (socket) => {
-  socket.on("rooms", (data) => {  
-    socket.join(data.UserName?data.UserName:data);        
+  socket.on("rooms", (data) => { 
+    socket.join(data?data:socket.id)      
   });
   socket.on("private_msg", (data) => {
     data.type="incoming"
@@ -84,21 +87,16 @@ io.on("connection", (socket) => {
    }))
   })
 });
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-    credentials: true,
-  })
-);
 process.on('warning', e => console.warn(e.stack));
 app.use('/api/auth',userRoutes)
 app.use('/api/auth/post',postsRoutes)
 app.use('/api/conversation',chatsRoutes)
 app.use('/api/auth/reels',reelsRoutes)
 app.use('/api/auth/follow',friendReqRoutes)
-app.listen(PORT, () => {
+app.use('/api/notification',notificationRoutes)
+server.listen(PORT, () => {
   console.log(`App Server is running on port ${PORT}`);
 });
-server.listen(8000, () => {
-  console.log(`Socket Server is running on port 8000`);
-});
+// server.listen(8000, () => {
+//   console.log(`Socket Server is running on port 8000`);
+// });

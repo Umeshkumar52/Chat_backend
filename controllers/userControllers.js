@@ -2,11 +2,11 @@ import path from "path";
 import user from "../models/user.js";
 import cloudinary from 'cloudinary'
 import {getIo} from '../midilwares/IoInstance.js'
+import notification from "../models/notificationSchema.js";
 const cookieOptions={
     maxAge:new Date(Date.now()+24*60*60*1000),
-    httpOnly:false,
-    secure:false,
-    sameSite:'None'
+    httpOnly:true,
+    secure:true
 }
 const createUser=async(req,res)=>{
     try {       
@@ -71,8 +71,19 @@ const createUser=async(req,res)=>{
         let io=getIo()
         const{requester,reciever}=req.params          
          await user.findByIdAndUpdate(requester,{$push:{Following:reciever}})
-         await user.findByIdAndUpdate(reciever,{$push:{Followers:requester}})
-            io.emit("following",{reciever:reciever,requester:requester})
+         await user.findByIdAndUpdate(reciever,{
+            $push:{Followers:requester},
+            $inc:{unReadNotification:1}
+        })
+        const response=await notification.create({
+            sender:requester,
+            reciever:reciever,
+            type:'following',
+            message:`following you.`
+        })
+        io.to(reciever).emit("newNotification",response)
+        io.to(reciever).emit("unReadNotification",response)
+        io.emit("following",{reciever:reciever,requester:requester})
             return res.status(200).json({
                 success:true,
                 message:"Successfull"
@@ -170,14 +181,13 @@ const createUser=async(req,res)=>{
  }
  const userWithAllPost=async(req,res)=>{
     try {
-        const{user_id}=req.params
-        const response=await user.findById(user_id)
+        const response=await user.find(req.params)
         .populate({
             path:"myPosts",
             populate:{
                 path:"author",
                 model:"user",
-                select:["_id","Name","UserName","avatar"]
+                select:["_id","Name","UserName","avatar",'Followers']
             }
         })
         .populate({
@@ -185,7 +195,7 @@ const createUser=async(req,res)=>{
             populate:{
                 path:"author",
                 model:"user",
-                select:["_id","Name","UserName","avatar"]
+                select:["_id","Name","UserName","avatar","Followers"]
             }
         })
 
@@ -215,17 +225,16 @@ const createUser=async(req,res)=>{
         })
     }
  }
- const getUser=async(req,res)=>{
+ const searchUsers=async(req,res)=>{
     try {
-        console.log(req.params);
         const{UserName}=req.params
-        const response=await user.find({UserName:UserName})
-        console.log(response);
-        
+        if(UserName.length>2){
+        const response=await user.find({UserName:{$regex:`^${UserName}`,$options:'i'}}).limit(11)
         res.status(200).json({
             success:true,
             message:response
         })
+    }
     } catch (error) {
         return res.status(512).json({
             success:false,
@@ -233,4 +242,4 @@ const createUser=async(req,res)=>{
         })
     }
  }
-export {createUser,userWithAllPost,userInf,unfollowing,getUser,userFollowing,following,logout,login,updateUser}
+export {createUser,userWithAllPost,userInf,unfollowing,searchUsers,userFollowing,following,logout,login,updateUser}
