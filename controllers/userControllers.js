@@ -242,4 +242,4 @@ const createUser=async(req,res)=>{
         })
     }
  }
-export {createUser,userWithAllPost,userInf,unfollowing,getUser,userFollowing,following,logout,login,updateUser}
+export {createUser,searchUsers,userWithAllPost,userInf,unfollowing,userFollowing,following,logout,login,updateUser}
