@@ -6,7 +6,7 @@ import notification from "../models/notificationSchema.js";
 const cookieOptions={
     maxAge:new Date(Date.now()+24*60*60*1000),
     httpOnly:true,
-    secure:true
+    secure:true,
 }
 const createUser=async(req,res)=>{
     try {       
@@ -242,4 +242,4 @@ const createUser=async(req,res)=>{
         })
     }
  }
-export {createUser,userWithAllPost,userInf,unfollowing,searchUsers,userFollowing,following,logout,login,updateUser}
+export {createUser,userWithAllPost,userInf,unfollowing,getUser,userFollowing,following,logout,login,updateUser}

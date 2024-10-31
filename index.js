@@ -38,6 +38,7 @@ cloudinary.config({
 const io = new Server(server,{
   cors:corOptions
 })
+// const io = new Server(server)
 setIo(io)
 io.use((socket, next) => {
   const userName = socket.handshake.auth.userName;
