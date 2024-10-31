@@ -28,6 +28,8 @@ const corOptions={
   origin:process.env.CLIENT_URL,
   credential:true
    }
+
+app.options('*', cors(corOptions));
 app.use(cors(corOptions))
 cloudinary.config({ 
   cloud_name:process.env.CLOUD_NAME, 
