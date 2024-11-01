@@ -26,7 +26,7 @@ app.use(express.json())
 const corOptions={
   // origin:"http://localhost:3000",
   origin:process.env.CLIENT_URL,
-  credential:true
+  credentials:true
    }
 
 app.options('*', cors(corOptions));
