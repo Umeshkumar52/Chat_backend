@@ -109,10 +109,8 @@ export const reel_Comments=async(req,res)=>{
 export const likeToReel=async(req,res)=>{
     try {
         let io=getIo()
-        const {post_id,author}=req.params;        
-       
+        const {post_id,author}=req.params;       
         const post=await reelSchema.findByIdAndUpdate(post_id,{$push:{likes:author}})
-        io.emit("reelLike",post_id)
       res.status(200).json({
      success:true,
      message:"successfull"
@@ -127,9 +125,8 @@ export const likeToReel=async(req,res)=>{
 export const disLikeToReel=async(req,res)=>{
     try {
         let io=getIo()
-        const {post_id,author}=req.params;        
-        const post=await reelSchema.findByIdAndUpdate(post_id,{$pull:{likes:author}})
-        io.emit("reelDisLike",post_id)
+        const {post_id,author}=req.params;       
+        const post=await reelSchema.findByIdAndUpdate(post_id,{$pull:{likes:author}})  
       res.status(200).json({
      success:true,
      message:"successfull"

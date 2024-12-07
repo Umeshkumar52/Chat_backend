@@ -116,7 +116,8 @@ export const GetAllMessages=async(req,res)=>{
    try {
       const{textMsgData,fileMsgData}=req.body;
       const{conversation_id}=req.params;
-       if(textMsgData.length>1){    
+      console.log(textMsgData,fileMsgData,req.body,req.params);
+       if(textMsgData.length>1){             
         await chatsSchema.deleteMany({_id:{$in:textMsgData}})
          await conversation.updateMany({_id:conversation_id},{$pull:{chats:{$in:textMsgData}}})
        }else if(textMsgData.length==1){       

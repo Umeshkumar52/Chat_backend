@@ -7,6 +7,7 @@ const cookieOptions={
     maxAge:new Date(Date.now()+24*60*60*1000),
     httpOnly:true,
     secure:true,
+    sameSite:"None"
 }
 export const createUser=async(req,res)=>{
     try {       
@@ -69,7 +70,8 @@ export const updateUser=async(req,res)=>{
 export const following=async(req,res)=>{
     try {
         let io=getIo()
-        const{requester,reciever}=req.params          
+        const{requester,reciever}=req.params    
+        io.emit("following",{reciever:reciever,requester:requester})      
          await user.findByIdAndUpdate(requester,{$push:{Following:reciever}})
          await user.findByIdAndUpdate(reciever,{
             $push:{Followers:requester},
@@ -81,9 +83,8 @@ export const following=async(req,res)=>{
             type:'following',
             message:`following you.`
         })
-        io.to(reciever).emit("newNotification",response)
-        io.to(reciever).emit("unReadNotification",response)
-        io.emit("following",{reciever:reciever,requester:requester})
+        // io.to(reciever).emit("newNotification",response)
+        // io.to(reciever).emit("unReadNotification",response)
             return res.status(200).json({
                 success:true,
                 message:"Successfull"
@@ -98,10 +99,10 @@ export const following=async(req,res)=>{
 export const unfollowing=async(req,res)=>{
     try {
         let io=getIo()
-        const{requester,reciever}=req.params          
+        const{requester,reciever}=req.params 
+        io.emit("unfollowing",{reciever:reciever,requester:requester})         
          await user.updateOne({_id:requester},{$pull:{Following:reciever}})
-         await user.updateOne({_id:reciever},{$pull:{Followers:requester}})
-            io.emit("unfollowing",{reciever:reciever,requester:requester})
+         await user.updateOne({_id:reciever},{$pull:{Followers:requester}})       
             return res.status(200).json({
                 success:true,
                 message:"Successfull"

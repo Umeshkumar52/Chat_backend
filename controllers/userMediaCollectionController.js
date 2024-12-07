@@ -179,13 +179,8 @@ export const likeAPost=async(req,res)=>{
     try {
         let io=getIo()
         const {post_id,author}=req.params;
-        // const existLike=await userMediaCollectionSchema.find(post_id,{likes:{$elemMatch:author}})
-        // console.log(existLike);
-        // if(existLike){
-        //    return
-        // }
         const post=await userMediaCollectionSchema.findByIdAndUpdate(post_id,{$push:{likes:author}})
-        io.emit("comment",post)
+        // io.emit("comment",post)
       res.status(200).json({
      success:true,
      message:post
