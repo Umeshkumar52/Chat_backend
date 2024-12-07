@@ -26,10 +26,12 @@ app.use(bodyParser.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 const corOptions={
-  origin:"http://localhost:3000",
-  // origin:process.env.CLIENT_URL,
+  // origin:"http://localhost:3000",
+  origin:process.env.CLIENT_URL,
   credentials:true
    }
+
+app.options('*', cors(corOptions));
 app.use(cors(corOptions))
 cloudinary.config({ 
   cloud_name:process.env.CLOUD_NAME, 
