@@ -14,8 +14,6 @@ import reelsRoutes from './routers/reelsRoutes.js'
 import friendReqRoutes from './routers/friendReqRoutes.js'
 import notificationRoutes from './routers/notificationRoutes.js'
 import { setIo } from "./midilwares/IoInstance.js"
-import { send } from "node:process"
-import { on } from "node:events"
 dbConnect()
 const app = express();
 app.use(cookieParser())
