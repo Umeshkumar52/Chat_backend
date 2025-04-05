@@ -4,17 +4,17 @@ import {allStories, deletePost, deleteStory,dish_likeAPost,getPosts, likeAPost, 
 import authentication from '../midilwares/authentication.js'
 const router=express.Router()
 router
-.get('/AllPost/:offset/:limit',getPosts)
+.get('/AllPost/:offset/:limit',authentication,getPosts)
 .get('/specPost/:_id',Post)
-.get('/postComments/:post_id',post_Comments)
-.post('/newPost/:user_id',upload.single("file"),newPost)
-.put('/updateToPost/:post_id',updateToPost)
-.put('/likePost/:post_id/:author',likeAPost)
-.put('/dis_like/:post_id/:author',dish_likeAPost)
-.delete('/deletePost/:_id',deletePost)
-.post('/story',upload.single("story"),newStory)
+.get('/postComments/:post_id',authentication,post_Comments)
+.post('/newPost/:user_id',authentication,upload.single("file"),newPost)
+.put('/updateToPost/:post_id',authentication,updateToPost)
+.put('/likePost/:post_id/:author',authentication,likeAPost)
+.put('/dis_like/:post_id/:author',authentication,dish_likeAPost)
+.delete('/deletePost/:_id',authentication,deletePost)
+.post('/story',authentication,upload.single("story"),newStory)
 .get('/stories',allStories)
-.delete('/deletePost/:post_id/:public_id',deletePost)
-.delete('/deleteStory/:post_id/:public_id',deleteStory)
+.delete('/deletePost/:post_id/:public_id',authentication,deletePost)
+.delete('/deleteStory/:post_id/:public_id',authentication,deleteStory)
 
 export default router

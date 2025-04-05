@@ -4,15 +4,17 @@ import cloudinary from 'cloudinary'
 import {getIo} from '../midilwares/IoInstance.js'
 import notification from "../models/notificationSchema.js";
 const cookieOptions={
-    maxAge:new Date(Date.now()+24*60*60*1000),
     httpOnly:true,
-    secure:true,
-    sameSite:"None"
+    secure:false,
+    sameSite:"Lax",
+    maxAge:7*24*60*60*1000
 }
 export const createUser=async(req,res)=>{
     try {       
-        const {Email}=req.body
-        const exist=await user.findOne({Email:Email})
+        const {Email,UserName}=req.body
+        const exist=await user.findOne({
+            Email
+        })
         if(exist){
         return res.status(511).json({
             success:false,
@@ -31,7 +33,7 @@ export const createUser=async(req,res)=>{
         const token = await userSave.genJwtToken() 
        userSave.token=token
         user.Password=undefined
-       res.cookie("token",token,cookieOptions)         
+       res.cookie("authToken",token,cookieOptions)         
        return res.status(200).json({
             success:true,
             message:userSave
@@ -41,6 +43,49 @@ export const createUser=async(req,res)=>{
             success:false,
             message:"Please Create Account Again"
         }) 
+    }
+ }
+ export const login=async(req,res)=>{
+    try {
+        const{UserName,Email,Phone,Password}=req.body
+        const existUser=await user
+        .findOne({Email:Email})
+        .select("+Password")
+        if(existUser==null || await existUser.validator(Password,existUser.Password)==false){
+            return res.status(512).json({
+                success:false,
+                message:"Invalid Password"
+            })}
+            const token = await existUser.genJwtToken()        
+            existUser.token=token
+            user.password=undefined
+           res.cookie("authToken",token,cookieOptions) 
+          res.status(200).json({
+                success:true,
+                message:existUser
+            })
+    } catch (error) {
+        return res.status(512).json({
+            success:false,
+            message:"Account not exist"
+        })
+    }
+ }
+export const logout=async(req,res)=>{
+    try {
+         res.cookie("authToken",null,{
+            maxAge:null,
+            httpOnly:true
+         })
+         res.status(200).json({
+            success:true,
+            message:"Logout Successfully"
+        })
+    } catch (error) {
+       return res.status(500).json({
+        success:false,
+        message:error
+       }) 
     }
  }
 export const updateUser=async(req,res)=>{
@@ -135,49 +180,6 @@ export const userFollowing=async(req,res)=>{
             success:false,
             message:error
         })
-    }
- }
-export const login=async(req,res)=>{
-    try {
-        const{UserName,Email,Phone,Password}=req.body
-        const existUser=await user
-        .findOne({Email:Email})
-        .select("+Password")
-        if(existUser==null || await existUser.validator(Password,existUser.Password)==false){
-            return res.status(512).json({
-                success:false,
-                message:"Invalid Password"
-            })}
-            const token = await existUser.genJwtToken()        
-            existUser.token=token
-            user.password=undefined
-           res.cookie("token",token,cookieOptions) 
-          res.status(200).json({
-                success:true,
-                message:existUser
-            })
-    } catch (error) {
-        return res.status(512).json({
-            success:false,
-            message:"Account not exist"
-        })
-    }
- }
-export const logout=async(req,res)=>{
-    try {
-         res.cookie("token",null,{
-            maxAge:null,
-            httpOnly:true
-         })
-         res.status(200).json({
-            success:true,
-            message:"Logout Successfully"
-        })
-    } catch (error) {
-       return res.status(500).json({
-        success:false,
-        message:error
-       }) 
     }
  }
 export const userWithAllPost=async(req,res)=>{

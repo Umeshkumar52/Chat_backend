@@ -1,13 +1,13 @@
 import jwt from 'jsonwebtoken'
 async function authentication(req,res,next) {  
-    const {token}=req.cookies
-    if(!token){
+    const {authToken}=req.cookies
+    if(!authToken){
         return res.status(401).json({
            success:false,
            message:"Please Login,you are not Authenticate"
        })
      }
-     const ExistUser=await jwt.decode(token,process.env.JWT_SECRET_KEY)
+     const ExistUser=await jwt.decode(authToken,process.env.JWT_SECRET_KEY)
     if(!ExistUser){
            return res.status(401).json({
            success:false,

@@ -14,25 +14,24 @@ import reelsRoutes from './routers/reelsRoutes.js'
 import friendReqRoutes from './routers/friendReqRoutes.js'
 import notificationRoutes from './routers/notificationRoutes.js'
 import { setIo } from "./midilwares/IoInstance.js"
-import { send } from "node:process"
-import { on } from "node:events"
+dotenv.config()
 dbConnect()
 const app = express();
-app.use(cookieParser())
-dotenv.config()
 const server = createServer(app);
+const corOptions={
+  // origin:"http://localhost:3000",
+  origin:process.env.CLIENT_URL,
+  methods:['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders:['Content-Type','Authorization'],
+  credentials:true
+   }
+app.use(cors(corOptions))
+app.options("*",cors())
+app.use(cookieParser())
 const PORT = process.env.PORT || 5002
 app.use(bodyParser.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
-const corOptions={
-  // origin:"http://localhost:3000",
-  origin:process.env.CLIENT_URL,
-  credentials:true
-   }
-
-app.options('*', cors(corOptions));
-app.use(cors(corOptions))
 cloudinary.config({ 
   cloud_name:process.env.CLOUD_NAME, 
   api_key:process.env.API_KEY, 
@@ -71,10 +70,15 @@ io.on("connection", (socket) => {
   });
 // calls listening
 socket.on('offer',async(data)=>{
+  console.log("offer",data);
   socket.to(data.target).emit('offer',{
     'offer':data.offer,
     sender:data.sender
   })
+})
+// offer and callUser are same working choose any one only
+socket.on('callUser',({to,signalData,callerId})=>{
+  io.to(to).emit("incomingCall",{signalData,callerId})
 })
 socket.on('answer',async(data)=>{
   socket.to(data.target).emit('answer',{
@@ -89,10 +93,6 @@ socket.on('candidate',(data)=>{
   })
 })
 // call to user
-socket.on('callUser',({to,signalData,callerId})=>{
-  console.log(to,signalData,callerId);
-    io.to(to).emit("incomingCall",{signalData,callerId})
-})
 socket.on('acceptCall',({to,signalData})=>{
   io.to(to).emit('callAccepted',signalData)
 })
@@ -103,8 +103,7 @@ socket.on('endCall',async(target)=>{
   io.to(target).emit("endCall")
 })
 socket.on('disconnect',()=>{
-  console.log(socket.id);
-  
+  return;
 })
   let onlineUsers = [];
   for (let [id, socket] of io.of("/").sockets) {

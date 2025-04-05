@@ -64,8 +64,7 @@ const user=new mongoose.Schema({
     default:0
    }
 },
-{timestamps:true}
-)
+{timestamps:true})
 user.pre('save',async function(next){
     if(!this.isModified('Password')){
         return next()
@@ -80,12 +79,12 @@ user.methods={
     genJwtToken:function(){
         return jwt.sign(
             {
-              _id:this._id,UserName:this.UserName,Email_Phone:this.Email_Phone,Name:this.Name
-        },
-        'eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkphdmFJblVzZSIsImV4cCI6MTcyNTUwNzQxNywiaWF0IjoxNzI1NTA3NDE3fQ.o2H_GTlxL6qBOAUUP31E9VM6809B7EbIwHqeAKKXHLw',
+              _id:this._id,UserName:this.UserName,Email_Phone:this.Email_Phone,Name:this.Name,avatar:this.avatar
+          },
+        process.env.JWT_SECRET_KEY,
         {
             algorithm:'HS256',
-            expiresIn:'24h'
+            expiresIn:'7d'
         }
     )
     }
