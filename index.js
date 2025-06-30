@@ -12,16 +12,15 @@ import cloudinary from 'cloudinary'
 import postsRoutes from './routers/postsRoutes.js'
 import reelsRoutes from './routers/reelsRoutes.js'
 import friendReqRoutes from './routers/friendReqRoutes.js'
-import notificationRoutes from './routers/notificationRoutes.js'
 import { setIo } from "./midilwares/IoInstance.js"
+import authentication from "./midilwares/authentication.js"
 dotenv.config()
 dbConnect()
 const app = express();
 const server = createServer(app);
 const corOptions={
-  // origin:"http://localhost:3000",
   origin:process.env.CLIENT_URL,
-  methods:['GET','POST','PUT','DELETE','OPTIONS'],
+  // methods:['GET','POST','PUT','DELETE','OPTIONS'],
   allowedHeaders:['Content-Type','Authorization'],
   credentials:true
    }
@@ -63,47 +62,29 @@ io.on("connection", (socket) => {
     });
     
   });
-  socket.on("typingStatus", (data) => {
-    setTimeout(()=>{
-      socket.to(data.to).emit("typingStatus", data.status);
-    },1000)
+  socket.on("typing", ({to,state}) => {
+    socket.to(to).emit("typing",state)
+     
   });
-// calls listening
-socket.on('offer',async(data)=>{
-  console.log("offer",data);
-  socket.to(data.target).emit('offer',{
-    'offer':data.offer,
-    sender:data.sender
+  socket.on('following',(data)=>{
+    socket.to(data.requester).emit('following',data)
   })
-})
-// offer and callUser are same working choose any one only
-socket.on('callUser',({to,signalData,callerId})=>{
-  io.to(to).emit("incomingCall",{signalData,callerId})
-})
-socket.on('answer',async(data)=>{
-  socket.to(data.target).emit('answer',{
-    'answer':data.answer,
-    sender:data.sender
+  socket.on('unfollowing',(data)=>{
+    socket.to(data.requester).emit('unfollowing',data)
   })
-})
-socket.on('candidate',(data)=>{
-  io.to(data.target).emit('candidate',{
-    'candidate':data.candidate,
-    sender:data.sender
+  // calls handle
+  socket.on('candidate',({candidate,calleeId})=>{
+    socket.to(calleeId).emit('candidate',candidate)
   })
+socket.on('offer',async({offer,calleeUser,callerUser,type})=>{
+  socket.to(calleeUser?.calleeId).emit('offer',{offer,type,callerUser,calleeUser})
 })
-// call to user
-socket.on('acceptCall',({to,signalData})=>{
-  io.to(to).emit('callAccepted',signalData)
+socket.on('answer',async({callerId,answer})=>{ 
+  socket.to(callerId).emit('answer',answer)
+  //  io.emit('answer',answer)
 })
-socket.on('rejectCall',({to})=>{
-  io.to(to).emit('callRejected')
-})
-socket.on('endCall',async(target)=>{
-  io.to(target).emit("endCall")
-})
-socket.on('disconnect',()=>{
-  return;
+socket.on('end-call',({UserName})=>{
+socket.to(UserName).emit("end-call")
 })
   let onlineUsers = [];
   for (let [id, socket] of io.of("/").sockets) {
@@ -114,22 +95,21 @@ socket.on('disconnect',()=>{
     });
   }  
   socket.emit("online", onlineUsers);
-  socket.on("offline",(data)=>{
+  socket.on("disconnect",(data)=>{
    onlineUsers.push(onlineUsers.filter((user)=>{
     if( user.userId==socket.id){
         onlineUsers.online=false
     }
-    socket.emit("offline",onlineUsers)
+    socket.emit("online",onlineUsers)
    }))
   })
 });
 process.on('warning', e => console.warn(e.stack))
 app.use('/api/auth',userRoutes)
-app.use('/api/auth/post',postsRoutes)
-app.use('/api/conversation',chatsRoutes)
-app.use('/api/auth/reels',reelsRoutes)
-app.use('/api/auth/follow',friendReqRoutes)
-app.use('/api/notification',notificationRoutes)
+app.use('/api/auth/post',authentication,postsRoutes)
+app.use('/api/conversation',authentication,chatsRoutes)
+app.use('/api/auth/reels',authentication,reelsRoutes)
+app.use('/api/auth/follow',authentication,friendReqRoutes)
 server.listen(PORT, () => {
   console.log(`App Server is running on port ${PORT}`);
 })

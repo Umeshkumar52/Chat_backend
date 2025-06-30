@@ -11,6 +11,10 @@ const chatsSchema=new mongoose.Schema({
     msg_type:String,
     url_type:String,
     message:String,
+    callDuration:{
+        type:String,
+        default:null
+    },
     isRead:{
         type:Boolean,
         default:false

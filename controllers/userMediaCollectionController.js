@@ -1,4 +1,4 @@
-import userMediaCollectionSchema from "../models/userMediaCollectionSchema.js";
+import post from "../models/postSchema.js";
 import cloudinary from "cloudinary";
 import user from "../models/user.js";
 import comment from "../models/commentsSchema.js";
@@ -25,7 +25,7 @@ export const newPost = async (req, res) => {
           public_id: publicIdHandler(req.file, user_id, "video"),
         }
       );
-      response = await userMediaCollectionSchema.create({
+      response = await post.create({
         author: user_id,
         description,
         secure_url: cloudinary_res.secure_url,
@@ -49,7 +49,7 @@ export const newPost = async (req, res) => {
           public_id: publicIdHandler(req.file, user_id, "image"),
         }
       );
-      response = await userMediaCollectionSchema.create({
+      response = await post.create({
         author: user_id,
         description,
         secure_url: cloudinary_res.secure_url,
@@ -71,8 +71,6 @@ export const newPost = async (req, res) => {
       message: response,
     });
   } catch (error) {
-    console.log(error);
-    
     return res.status(512).json({
       success: false,
       message: "Failed to upload",
@@ -85,11 +83,13 @@ export const newStory = async (req, res) => {
     const { _id } = req.body;
     const cloudinary_res = await cloudinary.v2.uploader.upload(req.file.path, 
       {
+        // folder:"stories",
         width:1080,
         height:1920,
         aspect_ratio:"9:19",
         crop:"limit",
         resource_type: "video",
+        // upload_preset:"your_auto_delete_preset",
         public_id: publicIdHandler(req.file,_id, "story"),
       }
   );  
@@ -141,8 +141,8 @@ export const allStories = async (req, res) => {
 export const getPosts = async (req, res) => {
   try {
     const { limit, offset } = req.params;
-    const response = await userMediaCollectionSchema
-      .find({})
+    const response = await post
+    .find({})
       .sort({createdAt:-1})
       .skip(offset)
       .limit(limit)
@@ -150,6 +150,20 @@ export const getPosts = async (req, res) => {
         path:"author",
        select: ["_id", "Name", "UserName", "avatar", "Followers"],
       });
+    // .aggregate([{$sample:{size:3}},
+    //   {
+    //     $lookup:{
+    //       from:"user",
+    //       localField:"author",
+    //       foreignField:"_id",
+    //       as:"author"
+    //     }
+    //   },
+    //    {
+    //       $unwind:"$author"
+    //     }
+    // ])
+      
     res.status(200).json({
       success: true,
       message: response,
@@ -164,7 +178,7 @@ export const getPosts = async (req, res) => {
 export const Post = async (req, res) => {
   try {
     const { _id } = req.params;
-    const response = await userMediaCollectionSchema.findById(_id).populate({
+    const response = await post.findById(_id).populate({
       path: "author",
       select: ["_id", "Name", "UserName", "avatar", "Followers"],
     });
@@ -190,7 +204,7 @@ export const updateToPost = async (req, res) => {
       post_id,
     });
     io.emit("comment", response);
-    const post = await userMediaCollectionSchema.updateOne(
+    const post = await post.updateOne(
       { _id: post_id },
       { $push: { Comments: response._id } }
     );
@@ -226,7 +240,7 @@ export const likeAPost = async (req, res) => {
   try {
     let io = getIo();
     const { post_id, author } = req.params;
-    const post = await userMediaCollectionSchema.findByIdAndUpdate(post_id, {
+    const post = await post.findByIdAndUpdate(post_id, {
       $push: { likes: author },
     });
     // io.emit("comment",post)
@@ -245,7 +259,7 @@ export const dish_likeAPost = async (req, res) => {
   try {
     let io = getIo();
     const { post_id, author } = req.params;
-    const post = await userMediaCollectionSchema.findByIdAndUpdate(post_id, {
+    const post = await post.findByIdAndUpdate(post_id, {
       $pull: { likes: author },
     });
     io.emit("comment", post);
@@ -263,7 +277,7 @@ export const dish_likeAPost = async (req, res) => {
 export const disLikeAPost = async (req, res) => {
   try {
     const { post_id, author } = req.params;
-    const response = await userMediaCollectionSchema.findByIdAndUpdate(
+    const response = await post.findByIdAndUpdate(
       post_id,
       { $set: { $push: { disLikes: author } } }
     );
@@ -282,7 +296,7 @@ export const deletePost = async (req, res) => {
   try {
     const { public_id, post_id } = req.params;
     await cloudinary.v2.uploader.destroy(public_id);
-    const response = await userMediaCollectionSchema.findByIdAndDelete(post_id);
+    const response = await post.findByIdAndDelete(post_id);
     res.status(200).json({
       success: true,
       message: "Post Delete Successfully",
@@ -290,7 +304,7 @@ export const deletePost = async (req, res) => {
   } catch (error) {
     res.status(512).json({
       success: false,
-      message: error,
+      message:"Try again after sometime!",
     });
   }
 };

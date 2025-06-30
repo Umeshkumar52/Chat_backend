@@ -8,6 +8,7 @@ const user=new mongoose.Schema({
     },
     UserName:{
         type:String,
+        unique:true,
         require:true
     },
     Email:{
@@ -38,7 +39,7 @@ const user=new mongoose.Schema({
     },
     myPosts:[{
         type:Schema.Types.ObjectId,
-        ref:"userMediaCollectionSchema"
+        ref:"post"
     }],
     myReels:[{
          type:Schema.Types.ObjectId,

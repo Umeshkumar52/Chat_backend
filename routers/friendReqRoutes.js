@@ -1,5 +1,6 @@
 import express from 'express'
 import { friendReqResponse, friendRequest, friendsAllRequest } from '../controllers/freindReqController.js'
+import authentication from '../midilwares/authentication.js'
 const router=express.Router()
 router
 .post('/friendReq/:requester/:reciever',friendRequest)

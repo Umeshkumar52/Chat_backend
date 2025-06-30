@@ -6,7 +6,7 @@ const commentsSchema=new mongoose.Schema({
     },
     post_id:{
         type:mongoose.Schema.Types.ObjectId,
-        ref:"userMediaCollectionSchema"
+        ref:"post"
     },
     commit:String
 },{timestamps:true})

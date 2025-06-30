@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
-import user from './user.js'
-const userMediaCollectionSchema=new mongoose.Schema({
+const postSchema=new mongoose.Schema({
     author:{
         type:mongoose.Schema.Types.ObjectId,
         ref:"user"
@@ -34,4 +33,4 @@ const userMediaCollectionSchema=new mongoose.Schema({
     }],
     views:Number,
 },{timestamps:true})
-export default mongoose.model("userMediaCollectionSchema",userMediaCollectionSchema)
+export default mongoose.model("post",postSchema)

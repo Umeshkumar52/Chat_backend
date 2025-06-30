@@ -1,9 +1,7 @@
 import Conversation from "../models/Conversation";
 import cloudinary from 'cloudinary'
-import path from "path";
 async function mediaHandler(file,sender_id,_id) {
     if(file){
-        console.log("2",file.path);
         const options={
           overwrite:true
         }

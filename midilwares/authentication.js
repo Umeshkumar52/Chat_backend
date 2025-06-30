@@ -4,14 +4,14 @@ async function authentication(req,res,next) {
     if(!authToken){
         return res.status(401).json({
            success:false,
-           message:"Please Login,you are not Authenticate"
+           message:"Please Login,you are not authenticate"
        })
      }
      const ExistUser=await jwt.decode(authToken,process.env.JWT_SECRET_KEY)
     if(!ExistUser){
            return res.status(401).json({
            success:false,
-           message:"Please Login,you are not Authenticate"
+           message:"Please Login,you are not authenticate"
        })
      }
      req.user=ExistUser

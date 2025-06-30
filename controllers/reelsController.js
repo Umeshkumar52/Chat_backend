@@ -10,13 +10,14 @@ export const allReals = async (req, res) => {
     const { offset, limit } = req.params;
     const reels = await reelSchema
       .find({})
+       .sort({ createdAt: -1 })
+      .skip(offset)
+      .limit(limit)
       .populate({
         path: "author",
         select: ["_id", "UserName", "avatar", "Followers"],
       })
-      .sort({ createdAt: -1 })
-      .skip(offset)
-      .limit(limit);
+     
     return res.status(200).json({
       success: true,
       message: reels,
@@ -53,8 +54,6 @@ export const newReel = async (req, res) => {
     const io = getIo();
     const { user_id } = req.params;
     const { tittle } = req.body;
-    console.log(req.file.path);
-    
     const cloudinary_res = await cloudinary.v2.uploader.upload(req.file.path,
       {
              width:1080,
@@ -196,14 +195,14 @@ export const deletReel = async (req, res) => {
       resource_type: "video",
     });
     const response = await reelSchema.findByIdAndDelete(reel_id);
-    return res.status(200).json({
+     res.status(200).json({
       success: true,
       message: "Reel Deleted Successfully",
     });
   } catch (error) {
     return res.status(400).json({
       success: false,
-      message: "Unable To Reel Delete",
+      message: "Try again after sometime!",
     });
   }
 };
