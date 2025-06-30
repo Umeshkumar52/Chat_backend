@@ -106,10 +106,10 @@ socket.to(UserName).emit("end-call")
 });
 process.on('warning', e => console.warn(e.stack))
 app.use('/api/auth',userRoutes)
-app.use('/api/auth/post',authentication,postsRoutes)
-app.use('/api/conversation',authentication,chatsRoutes)
-app.use('/api/auth/reels',authentication,reelsRoutes)
-app.use('/api/auth/follow',authentication,friendReqRoutes)
+app.use('/api/auth/post',postsRoutes)
+app.use('/api/conversation',chatsRoutes)
+app.use('/api/auth/reels',reelsRoutes)
+app.use('/api/auth/follow',friendReqRoutes)
 server.listen(PORT, () => {
   console.log(`App Server is running on port ${PORT}`);
 })
