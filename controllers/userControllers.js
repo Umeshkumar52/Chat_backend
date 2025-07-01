@@ -119,7 +119,7 @@ export const forgetPassword = async (req, res) => {
         from: process.env.EMAIL,
         to: Email,
         subject: "Link to reset your Eangager password",
-        text: `Link has been valid upto 10 minutes. ${process.env.CLIENT_URL}/reset/${resetPasswordToken} Kindle reset your password within time`,
+        text: `Link has been valid upto 10 minutes. ${process.env.CLIENT_URL}/reset?token=${resetPasswordToken} Kindle reset your password within time`,
       };
       const transporter = nodemailer.createTransport({
         host: "smtp.gmail.com",
